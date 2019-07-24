@@ -3,15 +3,19 @@ from datetime import time, datetime
 from time import sleep
 import actions_impl
 
+#здесь токен бота
+TOKEN = ""
 #Инициализация бота
-bot = telebot.TeleBot("TOKEN")
+bot = telebot.TeleBot(TOKEN)
+#Время проверки (час, минута, секунда)
+check_time = time(16, 6, 0, 0)
+
+
+
 
 #id пользователя, которому будет приходить уведомление
 #получается после запуска скрипта отправкой команды /start боту
 worker_id = 0
-
-#Время проверки (час, минута, секунда)
-check_time = time(16, 6, 0, 0)
 
 #функция для проверки БД
 def check_db_data():
