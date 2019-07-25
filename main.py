@@ -5,13 +5,15 @@ import actions_impl
 
 #здесь токен бота
 TOKEN = ""
-#Инициализация бота
-bot = telebot.TeleBot(TOKEN)
 #Время проверки (час, минута, секунда)
 check_time = time(16, 6, 0, 0)
 
+if TOKEN == "":
+    print("Отсутствует токен бота")
+    exit(-1)
 
-
+#Инициализация бота
+bot = telebot.TeleBot(TOKEN)
 
 #id пользователя, которому будет приходить уведомление
 #получается после запуска скрипта отправкой команды /start боту
@@ -88,16 +90,13 @@ def is_check_time():
     if now.hour == check_time.hour and now.minute == check_time.minute and now.second == check_time.second:
         return True
     else:
-        return True#False
+        return False
 
-def __main__():
-    #Ожидание команды /start
-    bot.polling(none_stop=True, interval=5)
-    bot.send_message(worker_id, f"Готово, проверка базы данных будет выполнена в {check_time}")
-    #Пока не пришло вермя проверки БД спим
-    while not is_check_time():
-        sleep(1)
-    send_bd_check_results()
-    return
-
-__main__()
+print("Отправьте команду /start боту")
+#Ожидание команды /start
+bot.polling(none_stop=True, interval=5)
+bot.send_message(worker_id, f"Готово, проверка базы данных будет выполнена в {check_time}")
+#Пока не пришло вермя проверки БД спим
+while not is_check_time():
+    sleep(1)
+send_bd_check_results()
