@@ -22,4 +22,5 @@ if echo $installed | grep -q "pyTelegramBotAPI"; then
 else
 	pip3 install pytelegrambotapi
 fi
+
 echo "System ready"

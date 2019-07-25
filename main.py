@@ -21,7 +21,7 @@ worker_id = 0
 
 #функция для проверки БД
 def check_db_data():
-    return {"code":12, "message":"Empty values"}
+    return {"code":13, "message":"Empty values"}
 
 #словарь ошибок
 #Ключ - кол ошибки, значения - предлгаемые действия
@@ -75,8 +75,11 @@ def get_worker_id(message):
     worker_id = message.from_user.id
     bot.stop_polling()
 
-#Обработчик выбора пользователя
-@bot.callback_query_handler(func=lambda call: True)
+# Обработчик выбора пользователя
+# по какой-то причине при первом выборе варианта, он не считается обработанным в телеграмме и обрабатывается
+# при следующем запуске скрипта автоматически. Для этого идет проверка id пользователя.
+# Поправка - считается обработанным через некоторое время (около пол минуты)
+@bot.callback_query_handler(func=lambda call: worker_id != 0)
 def get_action(call):
     result = call_action(call.data)
     bot.send_message(worker_id, f"Результат выполнения: {result}")
@@ -84,7 +87,6 @@ def get_action(call):
 
 #Функция для проверки времени
 def is_check_time():
-    print(f"Time: {datetime.now().time()}")
     now = datetime.now().time()
     #если просто сравнить, то сравниваются и миллисекунды
     if now.hour == check_time.hour and now.minute == check_time.minute and now.second == check_time.second:
@@ -94,9 +96,13 @@ def is_check_time():
 
 print("Отправьте команду /start боту")
 #Ожидание команды /start
-bot.polling(none_stop=True, interval=5)
-bot.send_message(worker_id, f"Готово, проверка базы данных будет выполнена в {check_time}")
-#Пока не пришло вермя проверки БД спим
-while not is_check_time():
-    sleep(1)
-send_bd_check_results()
+try:
+    bot.polling(none_stop=True, interval=5)
+    bot.send_message(worker_id, f"Готово, проверка базы данных будет выполнена в {check_time}")
+    print(f"Скрипт запущен в {datetime.now().time()}")
+    #Пока не пришло вермя проверки БД спим
+    while not is_check_time():
+        sleep(1)
+    send_bd_check_results()
+except KeyboardInterrupt:
+    print("Скрипт остановлен")
