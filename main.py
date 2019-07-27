@@ -1,4 +1,4 @@
-import telebot
+from telega_api import *
 from datetime import time, datetime
 from time import sleep
 import actions_impl
@@ -6,14 +6,14 @@ import actions_impl
 #здесь токен бота
 TOKEN = ""
 #Время проверки (час, минута, секунда)
-check_time = time(16, 6, 0, 0)
+check_time = time(22, 21, 0, 0)
 
 if TOKEN == "":
     print("Отсутствует токен бота")
     exit(-1)
 
 #Инициализация бота
-bot = telebot.TeleBot(TOKEN)
+bot = TelegaAPI(TOKEN)
 
 #id пользователя, которому будет приходить уведомление
 #получается после запуска скрипта отправкой команды /start боту
@@ -21,7 +21,7 @@ worker_id = 0
 
 #функция для проверки БД
 def check_db_data():
-    return {"code":13, "message":"Empty values"}
+    return {"code":12, "message":"Empty values"}
 
 #словарь ошибок
 #Ключ - кол ошибки, значения - предлгаемые действия
@@ -40,11 +40,11 @@ dict_of_actions = \
     }
 
 #Добавление кнопок выбора действий в клавиатуру
-def add_keys(keyboard, error_code):
+def add_keys(keyboard :InlineKeyboardMarkup, error_code: int):
     actions = dict_of_actions[error_code]
     for action in actions:
-        key = telebot.types.InlineKeyboardButton(text=action[1], callback_data=action[0])
-        keyboard.add(key)
+        key = InlineKeyboardButton(text=action[1], callback_data=action[0])
+        keyboard.add_buttons(key)
 
 #Получение и вызов функции для выполнения выбора пользователя (добавить реализацию аргументов функции?)
 def call_action(action):
@@ -60,30 +60,42 @@ def call_action(action):
 #Функция для проверки БД, получения возможных действий и отправки результатов в телегу
 def send_bd_check_results():
     check_result = check_db_data()
-    keyboard = telebot.types.InlineKeyboardMarkup()
+    # клавиатура для выбора действий
+    keyboard = InlineKeyboardMarkup()
     add_keys(keyboard, check_result["code"])
-    bot.send_message(worker_id, f"Результаты проверки базы данных:\n\n"
+    # клавиатура дотверждения выбора
+    confirm_keyboard = InlineKeyboardMarkup()
+    confirm_keyboard.add_buttons(InlineKeyboardButton("Подтвердить", "yes"),
+                                 InlineKeyboardButton("Изменить выбор", "no"))
+    confirm = "no"
+    while confirm == "no":
+        response = bot.send_message(worker_id, f"Результаты проверки базы данных:\n\n"
         f"Код ошибки: {check_result['code']}\n"
         f"Сообщение:  {check_result['message']}",
         reply_markup = keyboard)
-    bot.polling(none_stop=True, interval=5)
+        # ждем выбора пользователя
+        callback = bot.wait_for_callback_query()
+        bot.send_message(worker_id, f"Вы выбрали {callback.data}", 
+                        reply_markup=confirm_keyboard)
+        # ждем подтверждение выбора
+        confirm = bot.wait_for_callback_query().data
+    result = call_action(callback.data)
+    bot.send_message(worker_id, f"Результат выполнения: {result}")
+
+
 
 #Обработчик команды /start
-@bot.message_handler(commands=['start'])
 def get_worker_id(message):
     global worker_id
     worker_id = message.from_user.id
-    bot.stop_polling()
 
 # Обработчик выбора пользователя
 # по какой-то причине при первом выборе варианта, он не считается обработанным в телеграмме и обрабатывается
 # при следующем запуске скрипта автоматически. Для этого идет проверка id пользователя.
 # Поправка - считается обработанным через некоторое время (около пол минуты)
-@bot.callback_query_handler(func=lambda call: worker_id != 0)
 def get_action(call):
     result = call_action(call.data)
     bot.send_message(worker_id, f"Результат выполнения: {result}")
-    bot.stop_polling()
 
 #Функция для проверки времени
 def is_check_time():
@@ -95,14 +107,19 @@ def is_check_time():
         return False
 
 print("Отправьте команду /start боту")
-#Ожидание команды /start
 try:
-    bot.polling(none_stop=True, interval=5)
-    bot.send_message(worker_id, f"Готово, проверка базы данных будет выполнена в {check_time}")
-    print(f"Скрипт запущен в {datetime.now().time()}")
-    #Пока не пришло вермя проверки БД спим
+    #Ожидание команды /start
+    while True:
+        message = bot.wait_for_message()
+        if message.text == '/start':
+            break
+    get_worker_id(message)
+    bot.send_message(worker_id, f"Готово, проверка будет выполнена в {check_time}")
+    # ждем наступления времени проверки
     while not is_check_time():
         sleep(1)
+    # выполняем проверку и высылаем результаты
     send_bd_check_results()
+    pass
 except KeyboardInterrupt:
     print("Скрипт остановлен")
