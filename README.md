@@ -1,7 +1,7 @@
 # TelegramBotTestT
 
 ## Зависимости
-- [telebot](https://github.com/eternnoir/pyTelegramBotAPI)
+- [requests](https://pypi.org/project/requests/)
 - Python 3
 
 ## Установка
@@ -13,3 +13,4 @@
 1. Скопировать токен бота в переменную TOKEN
 2. Установить время проверки в переменную check_time. Формат: check_time = (\<hour\>, \<minute\>, \<second\>, 0)
 3. Запустить скрипт
+4. Отправить боту команду /start (после сообщения скрипта)
