@@ -6,7 +6,7 @@ import actions_impl
 #здесь токен бота
 TOKEN = ""
 #Время проверки (час, минута, секунда)
-check_time = time(22, 21, 0, 0)
+check_time = time(7, 7, 7, 0)
 
 if TOKEN == "":
     print("Отсутствует токен бота")
@@ -84,7 +84,7 @@ def send_bd_check_results():
 
 
 
-#Обработчик команды /start
+# Обработчик команды /start
 def get_worker_id(message):
     global worker_id
     worker_id = message.from_user.id
@@ -122,4 +122,6 @@ try:
     send_bd_check_results()
     pass
 except KeyboardInterrupt:
+    if worker_id:
+        bot.send_message(worker_id, "Скрипт остановлен")
     print("Скрипт остановлен")

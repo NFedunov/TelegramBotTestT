@@ -128,20 +128,20 @@ class TelegaAPI:
         params = {'timeout': timeout, 'offset': self._offset, 'limit': limit, 
         'allowed_updates': allowed_updates}
         self._logger.info(f"Getting updates with params {params}")
-        results = requests.get(self._url + "getUpdates", params).json()
-        return results
+        updates = requests.get(self._url + "getUpdates", params).json()
+        return updates
 
-    def get_update(self, results: dict, update_pos):
-        if update_pos >= len(results['result']):
+    def get_update(self, updates: dict, update_pos):
+        if update_pos >= len(updates['result']):
             raise IndexError
-        return Update(results['result'][update_pos])
+        return Update(updates['result'][update_pos])
 
     # получить последнее необработанное сообщение
     def get_last_update(self, results: dict):
         return Update(results['result'][len(results['result']) - 1])
 
     # отправка сообщения
-    def send_message(self, chat_id, text, reply_markup=None):
+    def send_message(self, chat_id: int, text: str, reply_markup=None):
         params = {'chat_id': chat_id, 'text': text}
         if reply_markup is not None:
             params['reply_markup'] = dumps(reply_markup)
