@@ -140,7 +140,7 @@ class TelegaAPI:
     def get_updates(self, timeout=30, limit=1,
     allowed_updates=["message", "edited_channel_post", "callback_query"]) -> dict:
         params = {'timeout': timeout, 'offset': self._offset, 'limit': limit, 
-        'allowed_updates': allowed_updates}
+                  'allowed_updates': allowed_updates}
         self._logger.info(f"Getting updates with params {params}")
         updates = requests.get(self._url + "getUpdates", params).json()
         if updates['ok']:
@@ -150,14 +150,14 @@ class TelegaAPI:
             raise requests.RequestException
 
     def get_update(self, updates: dict, update_pos):
-        if update_pos >= len(updates['result']):
+        if update_pos >= len(updates):
             raise IndexError
-        return Update(updates['result'][update_pos])
+        return Update(updates[update_pos])
 
     # получить последнее необработанное сообщение
-    def get_last_update(self, results: dict):
-        if len(results):
-            return Update(results[len(results) - 1])
+    def get_last_update(self, updates: dict):
+        if len(updates):
+            return Update(updates[len(updates) - 1])
         else:
             return []
 
