@@ -79,6 +79,10 @@ class Callback_Query(dict):
     def chat_instance(self):
         return self['chat_instance']
 
+    @property
+    def message(self):
+        return Message(self['message'])
+
 # представляет объект Update
 class Update(dict):
     def __init__(self, update: dict):
@@ -103,7 +107,17 @@ class Update(dict):
         else:
             return None
 
+class InputFile:
+    def __init__(self):
+        pass
 
+class WebHook(dict):
+    def __init__(self, url:str, certificate=None, max_connections=40, allowed_updates=["message", "edited_channel_post", "callback_query"]):
+        self['url'] = url
+        if certificate:
+            self['certificate'] = certificate
+        self['max_connections'] = max_connections
+        self['allowed_updates'] = allowed_updates
 
 class TelegaAPI:
     _url : str
@@ -147,27 +161,28 @@ class TelegaAPI:
             params['reply_markup'] = dumps(reply_markup)
         self._logger.info(f"Sending message: {params}")
         response = requests.post(self._url + 'sendMessage', params).json()
+        self._logger.info(f"Response from sending message: {response}")
         if response['ok'] == False:
             self._logger.error(response)
             raise requests.RequestException
-        return response
+        return Message(response['result'])
 
     # ждем сообщения
-    def wait_for_message(self):
+    def wait_for_message(self) -> Message:
         updates = []
         while len(updates) == 0:
             updates = self.get_updates(allowed_updates=['message'])
         update = self.get_last_update(updates)
+        self._logger.info(f":Recieved update: {update}")
         self._offset = update.update_id + 1
-        message = update.message
-        return message
+        return update.message
     
     # ждем нажатия пользователем кнопки
-    def wait_for_callback_query(self):
+    def wait_for_callback_query(self) -> Callback_Query:
         updates = []
         while len(updates) == 0:
             updates = self.get_updates(allowed_updates=['callback_query'])
         update = self.get_last_update(updates)
+        self._logger.info(f":Recieved update: {update}")
         self._offset = update.update_id + 1
-        callback = update.callback_query
-        return callback
+        return update.callback_query

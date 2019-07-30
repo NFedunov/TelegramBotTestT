@@ -2,11 +2,16 @@ from telega_api import *
 from datetime import time, datetime
 from time import sleep
 import actions_impl
+import schedule
 
 #здесь токен бота
 TOKEN = ""
 #Время проверки (час, минута, секунда)
 check_time = time(7, 7, 7, 0)
+
+#id пользователя, которому будет приходить уведомление
+#получается после запуска скрипта отправкой команды /start боту
+worker_id = 0
 
 if TOKEN == "":
     print("Отсутствует токен бота")
@@ -14,10 +19,6 @@ if TOKEN == "":
 
 #Инициализация бота
 bot = TelegaAPI(TOKEN)
-
-#id пользователя, которому будет приходить уведомление
-#получается после запуска скрипта отправкой команды /start боту
-worker_id = 0
 
 #функция для проверки БД
 def check_db_data():
@@ -74,12 +75,22 @@ def send_bd_check_results():
         f"Сообщение:  {check_result['message']}",
         reply_markup = keyboard)
         # ждем выбора пользователя
-        callback = bot.wait_for_callback_query()
-        bot.send_message(worker_id, f"Вы выбрали {callback.data}", 
+        callback = None
+        # проверка того, что это колбек только что отправленного сообщения
+        while not callback:
+            callback_update = bot.wait_for_callback_query()
+            if callback_update.message.message_id == response.message_id:
+                callback = callback_update.data
+        response = bot.send_message(worker_id, f"Вы выбрали {callback}", 
                         reply_markup=confirm_keyboard)
         # ждем подтверждение выбора
-        confirm = bot.wait_for_callback_query().data
-    result = call_action(callback.data)
+        confirm = None
+        while not confirm:
+            # проверка того, что это колбек только что отправленного сообщения
+            callback_update = bot.wait_for_callback_query()
+            if callback_update.message.message_id == response.message_id:
+                confirm = callback_update.data
+    result = call_action(callback)
     bot.send_message(worker_id, f"Результат выполнения: {result}")
 
 
@@ -97,31 +108,26 @@ def get_action(call):
     result = call_action(call.data)
     bot.send_message(worker_id, f"Результат выполнения: {result}")
 
-#Функция для проверки времени
-def is_check_time():
-    now = datetime.now().time()
-    #если просто сравнить, то сравниваются и миллисекунды
-    if now.hour == check_time.hour and now.minute == check_time.minute and now.second == check_time.second:
-        return True
-    else:
-        return False
+if worker_id == 0:
+    try:
+        #Ожидание команды /start
+        print("Отправьте команду /start боту")
+        while True:
+            message = bot.wait_for_message()
+            if message.text == '/start':
+                break
+        get_worker_id(message)
+        print(f"ID: {worker_id}")
+        bot.send_message(worker_id, f"Готово, проверка будет выполнена в {check_time}")
+    except KeyboardInterrupt:
+        print("Скрипт остановлен")
 
-print("Отправьте команду /start боту")
+schedule.every().day.at(str(check_time)).do(send_bd_check_results)
+
 try:
-    #Ожидание команды /start
     while True:
-        message = bot.wait_for_message()
-        if message.text == '/start':
-            break
-    get_worker_id(message)
-    bot.send_message(worker_id, f"Готово, проверка будет выполнена в {check_time}")
-    # ждем наступления времени проверки
-    while not is_check_time():
+        send_bd_check_results()#schedule.run_pending()
         sleep(1)
-    # выполняем проверку и высылаем результаты
-    send_bd_check_results()
-    pass
 except KeyboardInterrupt:
-    if worker_id:
-        bot.send_message(worker_id, "Скрипт остановлен")
     print("Скрипт остановлен")
+    bot.send_message(worker_id, "Скрипт остановлен")
