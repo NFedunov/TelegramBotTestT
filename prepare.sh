@@ -24,4 +24,11 @@ else
 	echo "requests installed"
 fi
 
+if echo $installed | grep -q "schedule"; then
+	echo "schedule check done"
+else
+	pip3 install schedule
+	echo "schedule installed"
+fi
+
 echo "Done"
