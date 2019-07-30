@@ -2,6 +2,7 @@
 
 ## Зависимости
 - [requests](https://pypi.org/project/requests/)
+- [schedule](https://pypi.org/project/schedule/)
 - Python 3
 
 ## Установка
