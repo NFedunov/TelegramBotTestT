@@ -126,7 +126,7 @@ schedule.every().day.at(str(check_time)).do(send_bd_check_results)
 
 try:
     while True:
-        send_bd_check_results()#schedule.run_pending()
+        schedule.run_pending()
         sleep(1)
 except KeyboardInterrupt:
     print("Скрипт остановлен")

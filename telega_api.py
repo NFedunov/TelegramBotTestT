@@ -131,7 +131,7 @@ class TelegaAPI:
         # пропускаю все сообщения, которые полуичили до включения скрипта
         if skip_old_updates:
             res = self.get_updates(limit=100)
-            while(len(res['result']) != 0):
+            while(len(res) != 0):
                 update = self.get_last_update(res)
                 self._offset = update.update_id + 1
                 res = self.get_updates(limit=100)
@@ -143,7 +143,11 @@ class TelegaAPI:
         'allowed_updates': allowed_updates}
         self._logger.info(f"Getting updates with params {params}")
         updates = requests.get(self._url + "getUpdates", params).json()
-        return updates
+        if updates['ok']:
+            return updates['result']
+        else:
+            self._logger.exception(updates)
+            raise requests.RequestException
 
     def get_update(self, updates: dict, update_pos):
         if update_pos >= len(updates['result']):
@@ -152,7 +156,10 @@ class TelegaAPI:
 
     # получить последнее необработанное сообщение
     def get_last_update(self, results: dict):
-        return Update(results['result'][len(results['result']) - 1])
+        if len(results):
+            return Update(results[len(results) - 1])
+        else:
+            return []
 
     # отправка сообщения
     def send_message(self, chat_id: int, text: str, reply_markup=None):
